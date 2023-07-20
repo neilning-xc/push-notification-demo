@@ -33,7 +33,7 @@ function subscribeUserToPush() {
       const subscribeOptions = {
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(
-          'BHZRzn1ga45VmNm_8LCUJpbvKxZ_D2CBSsTkfkqKEPl6RAOd57BwFZ6piN9qmeMql9_5804lM-ZGYuzNc6Tr55U',
+          'BAT7jPQPTuZBP2uAAxtss2hxQS-aYRqOmJQGhKYNuDPtSbgitdMG3m0jZi8_Y2CsD86r9uQruneJZs2Slmxvopo',
         ),
       };
 

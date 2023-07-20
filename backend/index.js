@@ -3,17 +3,21 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const Datastore = require('nedb');
 const webpush = require('web-push');
+const dotenv = require('dotenv');
 
+dotenv.config();
 const db = new Datastore({filename: 'subscription.db'});
 db.loadDatabase();
+
+console.log('PRIVATE_KEY', );
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 const port = 4000;
 const vapidKeys = {
-  publicKey: 'BHZRzn1ga45VmNm_8LCUJpbvKxZ_D2CBSsTkfkqKEPl6RAOd57BwFZ6piN9qmeMql9_5804lM-ZGYuzNc6Tr55U',
-  privateKey: 'Z_5zfkBK2Yn_ng8oHtQ5WtUZkiFMaEotcYETu4crOkc',
+  publicKey: process.env.PUBLIC_KEY,
+  privateKey: process.env.PRIVATE_KEY,
 };
 webpush.setVapidDetails(
   'mailto:xcning@trip.com',
@@ -92,7 +96,7 @@ function deleteSubscription(id) {
 
 function triggerPushMsg (subscription, dataToSend) {
   console.log(subscription, dataToSend);
-  return webpush.sendNotification(subscription, JSON.stringify(dataToSend), { proxy: 'https://127.0.0.1:7890' }).then((response) => {
+  return webpush.sendNotification(subscription, JSON.stringify(dataToSend)).then((response) => {
     console.log(response);
   }).catch((err) => {
     if (err.statusCode === 404 || err.statusCode === 410) {
@@ -106,11 +110,9 @@ function triggerPushMsg (subscription, dataToSend) {
 
 app.get('/api/notify-all/', async (req, res) => {
   const dataToSend = {
-    notification: {
-      title: 'Example title',
-      body: 'This is a example body for notification',
-      icon: 'https://hk.trip.com/trip.ico'
-    }
+    title: 'Example title',
+    body: 'This is a example body for notification',
+    icon: 'https://hk.trip.com/trip.ico'
   };
 
   return findAllSubscription().then(function (subscriptions) {
