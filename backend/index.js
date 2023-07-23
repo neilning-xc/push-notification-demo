@@ -9,8 +9,6 @@ dotenv.config();
 const db = new Datastore({filename: 'subscription.db'});
 db.loadDatabase();
 
-console.log('PRIVATE_KEY', );
-
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -32,15 +30,85 @@ function saveSubscriptionToDatabase(subscription) {
         reject(err);
         return;
       }
-
       resolve(newDoc._id);
     });
   });
 }
 
+function findAllSubscription() {
+  return new Promise((resolve, reject) => {
+    db.find({}, function(err, docs) {
+      if (err) {
+        reject(err)
+      }
+      resolve(docs);
+    });
+  });
+}
 
+function findSubscription(endpoint) {
+  return new Promise((resolve, reject) => {
+    db.find({ endpoint }, function(err, docs) {
+      if (err) {
+        reject(err)
+      }
+      if (docs.length >= 1) {
+        resolve(docs[0]);
+      } else {
+        resolve(null);
+      }
+    });
+  });
+}
+
+function deleteSubscription(id) {
+  return new Promise((resolve, reject) => {
+    db.remove({ _id: id }, {}, function (err, numRemoved) {
+      if (err) {
+        reject(err);
+      }
+      resolve(id);
+    });
+  });
+}
+
+function removeSubscription(endpoint) {
+  return new Promise((resolve, reject) => {
+    db.remove({ endpoint }, {}, function (err, numRemoved) {
+      if (err) {
+        reject(err);
+      }
+      resolve(numRemoved);
+    });
+  });
+}
+
+function triggerPushMsg (subscription, dataToSend) {
+  console.log(subscription, dataToSend);
+  return webpush.sendNotification(subscription, JSON.stringify(dataToSend), { proxy: 'http://127.0.0.1:7890' }).then((response) => {
+    console.log(response);
+  }).catch((err) => {
+    if (err.statusCode === 404 || err.statusCode === 410) {
+      console.log('Subscription has expired or is no longer valid: ', err);
+      return deleteSubscription(subscription._id);
+    } else {
+      throw err;
+    }
+  });
+};
 
 app.get('/', async (req, res) => res.send('hello world'));
+app.post('/api/get-subscription/', async (req, res) => {
+  const subscription = req.body;
+  const doc = await findSubscription(subscription.endpoint);
+  if (doc) {
+    res.status(201);
+    res.json({data: {success: true, id: doc._id}});
+  } else {
+    res.status(201);
+    res.json({data: {success: true}});
+  }
+});
 app.post('/api/save-subscription/', async (req, res) => {
   if (!req.body || !req.body.endpoint) {
     res.status(400);
@@ -70,73 +138,71 @@ app.post('/api/save-subscription/', async (req, res) => {
     );
   });
 });
-
-function findAllSubscription() {
-  return new Promise((resolve, reject) => {
-    db.find({}, function(err, docs) {
-      if (err) {
-        reject(err)
-      }
-      resolve(docs);
-    });
-  });
-}
-
-function deleteSubscription(id) {
-  return new Promise((resolve, reject) => {
-    db.remove({ _id: id }, {}, function (err, numRemoved) {
-      if (err) {
-        reject(err);
-      }
-      resolve(id);
-    });
-  });
+app.post('/api/remove-subscription/', async (req, res) => {
+  const subscription = req.body;
+  await removeSubscription(subscription);
+  res.status(200);
+  res.json({data: { success: true }});
   
-}
-
-function triggerPushMsg (subscription, dataToSend) {
-  console.log(subscription, dataToSend);
-  return webpush.sendNotification(subscription, JSON.stringify(dataToSend)).then((response) => {
-    console.log(response);
-  }).catch((err) => {
-    if (err.statusCode === 404 || err.statusCode === 410) {
-      console.log('Subscription has expired or is no longer valid: ', err);
-      return deleteSubscription(subscription._id);
-    } else {
-      throw err;
-    }
-  });
-};
-
-app.get('/api/notify-all/', async (req, res) => {
+});
+app.post('/api/notify-all/', async (req, res) => {
+  const { title, body } = req.body;
   const dataToSend = {
-    title: 'Example title',
-    body: 'This is a example body for notification',
+    title: title,
+    body: body,
     icon: 'https://hk.trip.com/trip.ico'
   };
 
-  return findAllSubscription().then(function (subscriptions) {
-    let promiseChain = Promise.resolve();
+  try {
+    const subscriptions = await findAllSubscription();
     for (let i = 0; i < subscriptions.length; i++) {
       const subscription = subscriptions[i];
-      promiseChain = promiseChain.then(async () => {
-        const pushResponse = await triggerPushMsg(subscription, dataToSend);
-        console.log(pushResponse);
-      });
+      await triggerPushMsg(subscription, dataToSend);
     }
-    return promiseChain;
-  }).then(() => {
     res.json({ data: { success: true } });
-  }).catch(function(err) {
+  } catch (err) {
     res.status(500);
     res.json({
-        error: {
+      error: {
         message: `Send all subscriptions failed: ` +
-            `'${err.message}'`
-        }
+          `'${err.message}'`
+      }
     });
-  });
+  }
+  // return findAllSubscription().then(function (subscriptions) {
+  //   let promiseChain = Promise.resolve();
+  //   for (let i = 0; i < subscriptions.length; i++) {
+  //     const subscription = subscriptions[i];
+  //     promiseChain = promiseChain.then(async () => {
+  //       const pushResponse = await triggerPushMsg(subscription, dataToSend);
+  //       console.log(pushResponse);
+  //     });
+  //   }
+  //   return promiseChain;
+  // }).then(() => {
+  //   res.json({ data: { success: true } });
+  // }).catch(function(err) {
+    
+  // });
 });
 
+app.post('/api/notify-me/', async (req, res) => {
+  const { message, subscription } = req.body;
+  const doc = await findSubscription(subscription.endpoint);
+  if (doc) {
+    const { title, body } = message;
+    const dataToSend = {
+      title: title,
+      body: body,
+      icon: 'https://hk.trip.com/trip.ico'
+    }; 
+     
+    await triggerPushMsg(subscription, dataToSend);
+    res.json({ data: { success: true } });
+    return;
+  } 
+  res.status(500);
+  res.json({ data: { success: false } });
+});
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`));

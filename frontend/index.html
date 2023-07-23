@@ -16,17 +16,39 @@
 </head>
 <body>
   <h1>Push notifications client</h1>
-  <button id="subscribe">
-    Subscribe to push
-  </button>
-  <button id="unsubscribe" disabled>
-    Unsubscribe from push
-  </button>
-  <button id="notify-me" disabled>
-    Notify me
-  </button>
-  <button id="notify-all">
+
+  <fieldset>
+    <legend>Profile:</legend>
+    <div>
+      <input type="checkbox" id="subscribeCheckbox">
+      <label for="subscribeCheckbox">Subscribe to push</label>
+    </div>
+  </fieldset>
+
+  <hr />
+
+  <h1>Push admin</h1>
+  <dl>
+    <dt>
+      <label for="title">title</label>
+    </dt>
+    <dt>
+      <textarea id="msgTitle" cols="30" rows="10">example title</textarea>
+    </dt>
+  </dl>
+  <dl>
+    <dt>
+      <label for="msgBody">body</label>
+    </dt>
+    <dt>
+      <textarea id="msgBody" cols="30" rows="10">example body</textarea>
+    </dt>
+  </dl>
+  <button id="notifyAll">
     Notify all
+  </button>
+  <button id="notifyMe">
+    Notify me
   </button>
   <script src="index.js"></script>
 </body>
