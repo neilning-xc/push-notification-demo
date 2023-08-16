@@ -50,7 +50,7 @@ function findSubscription(endpoint) {
   return new Promise((resolve, reject) => {
     db.find({ endpoint }, function(err, docs) {
       if (err) {
-        reject(err)
+        reject(err);
       }
       if (docs.length >= 1) {
         resolve(docs[0]);
@@ -84,12 +84,9 @@ function removeSubscription(endpoint) {
 }
 
 function triggerPushMsg (subscription, dataToSend) {
-  console.log(subscription, dataToSend);
-  return webpush.sendNotification(subscription, JSON.stringify(dataToSend), { proxy: 'http://127.0.0.1:7890' }).then((response) => {
-    console.log(response);
-  }).catch((err) => {
+  // 国内调试需要添加本地代理proxy参数
+  return webpush.sendNotification(subscription, JSON.stringify(dataToSend), { proxy: 'http://127.0.0.1:7890' }).catch((err) => {
     if (err.statusCode === 404 || err.statusCode === 410) {
-      console.log('Subscription has expired or is no longer valid: ', err);
       return deleteSubscription(subscription._id);
     } else {
       throw err;
@@ -105,7 +102,7 @@ app.post('/api/get-subscription/', async (req, res) => {
     res.status(201);
     res.json({data: {success: true, id: doc._id}});
   } else {
-    res.status(201);
+    res.status(200);
     res.json({data: {success: true}});
   }
 });
@@ -143,7 +140,6 @@ app.post('/api/remove-subscription/', async (req, res) => {
   await removeSubscription(subscription);
   res.status(200);
   res.json({data: { success: true }});
-  
 });
 app.post('/api/notify-all/', async (req, res) => {
   const { title, body } = req.body;
@@ -169,21 +165,6 @@ app.post('/api/notify-all/', async (req, res) => {
       }
     });
   }
-  // return findAllSubscription().then(function (subscriptions) {
-  //   let promiseChain = Promise.resolve();
-  //   for (let i = 0; i < subscriptions.length; i++) {
-  //     const subscription = subscriptions[i];
-  //     promiseChain = promiseChain.then(async () => {
-  //       const pushResponse = await triggerPushMsg(subscription, dataToSend);
-  //       console.log(pushResponse);
-  //     });
-  //   }
-  //   return promiseChain;
-  // }).then(() => {
-  //   res.json({ data: { success: true } });
-  // }).catch(function(err) {
-    
-  // });
 });
 
 app.post('/api/notify-me/', async (req, res) => {
