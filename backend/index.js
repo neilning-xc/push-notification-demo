@@ -142,11 +142,11 @@ app.post('/api/remove-subscription/', async (req, res) => {
   res.json({data: { success: true }});
 });
 app.post('/api/notify-all/', async (req, res) => {
-  const { title, body } = req.body;
+  const { title, body, userName } = req.body;
   const dataToSend = {
     title: title,
     body: body,
-    icon: 'https://hk.trip.com/trip.ico'
+    userName,
   };
 
   try {
@@ -171,11 +171,11 @@ app.post('/api/notify-me/', async (req, res) => {
   const { message, subscription } = req.body;
   const doc = await findSubscription(subscription.endpoint);
   if (doc) {
-    const { title, body } = message;
+    const { title, body, userName } = message;
     const dataToSend = {
       title: title,
       body: body,
-      icon: 'https://hk.trip.com/trip.ico'
+      userName,
     }; 
      
     await triggerPushMsg(subscription, dataToSend);
@@ -184,6 +184,20 @@ app.post('/api/notify-me/', async (req, res) => {
   } 
   res.status(500);
   res.json({ data: { success: false } });
+});
+
+app.post('/api/report-push', async (req, res) => {
+  const notify = req.body;
+  console.log(notify);
+  res.json({ data: { success: true } });
+  return;
+});
+
+app.post('/api/report-click', async (req, res) => {
+  const notify = req.body;
+  console.log(notify);
+  res.json({ data: { success: true } });
+  return;
 });
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`));

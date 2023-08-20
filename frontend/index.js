@@ -197,8 +197,9 @@ function handleUI(serviceWorkerRegistration) {
   notifyAll.addEventListener('click', (event) => {
     const title = document.getElementById('msgTitle').value;
     const body = document.getElementById('msgBody').value;
+    const userName = document.getElementById('msgUserName').value;
     if (title && body) {
-      sendNotificationToAll({ title: title, body: body });
+      sendNotificationToAll({ title: title, body: body, userName });
     }
   });
   notifyMe.addEventListener('click', async () => {
@@ -206,8 +207,9 @@ function handleUI(serviceWorkerRegistration) {
     if (subscription) {
       const title = document.getElementById('msgTitle').value;
       const body = document.getElementById('msgBody').value;
+      const userName = document.getElementById('msgUserName').value;
       if (title && body) {
-        sendNotificationToMe(subscription, { title: title, body: body });
+        sendNotificationToMe(subscription, { title: title, body: body, userName });
       }
     }
   });
